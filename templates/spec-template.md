@@ -5,6 +5,33 @@
 **Status**: Draft  
 **Input**: User description: "$ARGUMENTS"
 
+## Domain Context *(include if domain model exists)*
+
+<!--
+  If a domain model exists at `.specify/domain/domain.md`, complete this section.
+  Otherwise, mark as "N/A - No domain model defined" and proceed to User Scenarios.
+-->
+
+**Bounded Context**: [Which bounded context does this feature belong to? Reference `.specify/domain/domain.md`]
+
+**Core Entities**: [List relevant domain entities this feature interacts with]
+- [Entity 1] - [Brief description of involvement]
+- [Entity 2] - [Brief description of involvement]
+
+**Aggregates**: [Which aggregates does this feature modify or query?]
+- [Aggregate 1] - [Read/Write/Both] - [Why this aggregate is involved]
+
+**Domain Events**: [Events this feature triggers or consumes]
+- **Triggers**: [Events emitted by this feature, e.g., "OrderPlaced", "PaymentCompleted"]
+- **Consumes**: [Events this feature listens to, e.g., "InventoryUpdated", "UserRegistered"]
+
+**Ubiquitous Language**: [Key domain terms used in this feature - verify they match domain model]
+- [Term 1]: [Definition from domain model]
+- [Term 2]: [Definition from domain model]
+
+**Integration Points**: [How this feature integrates with other bounded contexts]
+- [Context 1]: [Via events/API/shared kernel] - [Purpose]
+
 ## User Scenarios & Testing *(mandatory)*
 
 <!--

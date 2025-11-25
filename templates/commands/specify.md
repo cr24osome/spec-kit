@@ -72,6 +72,30 @@ Given that feature description, do this:
 
 3. Load `templates/spec-template.md` to understand required sections.
 
+3a. **Check for Domain Model** (Domain-First Integration):
+   
+   Check if `.specify/domain/domain.md` exists:
+   
+   - **If domain model exists**:
+     1. Read `.specify/domain/domain.md` to understand:
+        - Available Bounded Contexts
+        - Defined Entities and Aggregates
+        - Domain Events
+        - Ubiquitous Language terms
+     2. Analyze the feature description to determine:
+        - Which Bounded Context(s) this feature belongs to
+        - Which Entities/Aggregates it interacts with
+        - Which Domain Events it should trigger or consume
+        - Which Ubiquitous Language terms apply
+     3. Prepare domain context information to populate the "Domain Context" section in the spec
+     4. Ensure all terminology used in the spec matches the Ubiquitous Language
+     5. Validate that the feature respects aggregate boundaries defined in the domain model
+   
+   - **If domain model does NOT exist**:
+     1. Note that no domain model is defined
+     2. Mark the "Domain Context" section in the spec as "N/A - No domain model defined"
+     3. Proceed with standard feature analysis
+
 4. Follow this execution flow:
 
     1. Parse user description from Input

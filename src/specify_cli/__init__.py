@@ -736,10 +736,195 @@ def download_template_from_github(ai_assistant: str, download_dir: Path, *, scri
     }
     return zip_path, metadata
 
-def download_and_extract_template(project_path: Path, ai_assistant: str, script_type: str, is_current_dir: bool = False, *, verbose: bool = True, tracker: StepTracker | None = None, client: httpx.Client = None, debug: bool = False, github_token: str = None) -> Path:
+def copy_local_template(project_path: Path, ai_assistant: str, script_type: str, is_current_dir: bool = False, *, verbose: bool = True, tracker: StepTracker | None = None) -> Path:
+    """Copy templates from local spec-kit directory for development/testing.
+    Returns project_path. Uses tracker if provided.
+    """
+    # Find the spec-kit root directory (where templates/ and scripts/ are located)
+    cli_path = Path(__file__).parent  # src/specify_cli/
+    spec_kit_root = cli_path.parent.parent  # spec-kit/
+    
+    templates_dir = spec_kit_root / "templates"
+    scripts_dir = spec_kit_root / "scripts"
+    
+    if not templates_dir.exists() or not scripts_dir.exists():
+        raise RuntimeError(f"Local templates not found. Expected:\n  {templates_dir}\n  {scripts_dir}")
+    
+    if tracker:
+        tracker.start("local-copy", "using local templates")
+    elif verbose:
+        console.print(f"[cyan]Using local templates from:[/cyan] {spec_kit_root}")
+    
+    # Create project directory if needed
+    if not is_current_dir:
+        project_path.mkdir(parents=True, exist_ok=True)
+    
+    # Set up directory structure
+    agent_config = AGENT_CONFIG.get(ai_assistant)
+    if not agent_config:
+        raise RuntimeError(f"Unknown agent: {ai_assistant}")
+    
+    agent_folder = agent_config["folder"]
+    
+    # Determine command directory based on agent
+    if ai_assistant == "copilot":
+        commands_dir = project_path / ".github" / "agents"
+    elif ai_assistant == "windsurf":
+        commands_dir = project_path / ".windsurf" / "workflows"
+    elif ai_assistant == "kilocode":
+        commands_dir = project_path / ".kilocode" / "rules"
+    elif ai_assistant == "auggie":
+        commands_dir = project_path / ".augment" / "rules"
+    elif ai_assistant == "roo":
+        commands_dir = project_path / ".roo" / "rules"
+    elif ai_assistant == "q":
+        commands_dir = project_path / ".amazonq" / "prompts"
+    elif ai_assistant == "amp":
+        commands_dir = project_path / ".agents" / "commands"
+    elif ai_assistant == "shai":
+        commands_dir = project_path / ".shai" / "commands"
+    else:
+        commands_dir = project_path / agent_folder.rstrip("/") / "commands"
+    
+    commands_dir.mkdir(parents=True, exist_ok=True)
+    
+    # Create .specify directory structure
+    specify_dir = project_path / ".specify"
+    specify_scripts_dir = specify_dir / "scripts" / ("bash" if script_type == "sh" else "powershell")
+    specify_templates_dir = specify_dir / "templates"
+    
+    specify_scripts_dir.mkdir(parents=True, exist_ok=True)
+    specify_templates_dir.mkdir(parents=True, exist_ok=True)
+    
+    if tracker:
+        tracker.complete("local-copy", f"structure created")
+        tracker.add("copy-commands", "Copy command templates")
+        tracker.start("copy-commands")
+    
+    # Copy command templates
+    commands_src = templates_dir / "commands"
+    command_count = 0
+    for cmd_file in commands_src.glob("*.md"):
+        # Determine command format based on agent
+        if ai_assistant in ["gemini", "qwen"]:
+            # TOML format - skip for now, would need conversion
+            continue
+        
+        # Generate command filename
+        if cmd_file.stem.endswith("-init"):
+            # domain-init.md -> speckit.domain.md
+            cmd_name = cmd_file.stem.replace("-init", "")
+        else:
+            cmd_name = cmd_file.stem
+        
+        if ai_assistant == "copilot":
+            dest_file = commands_dir / f"speckit.{cmd_name}.md"
+        else:
+            dest_file = commands_dir / f"speckit.{cmd_name}.md"
+        
+        # Copy and process the command file
+        content = cmd_file.read_text()
+        
+        # Replace placeholders
+        if script_type == "sh":
+            content = content.replace("{SCRIPT}", ".specify/scripts/bash/")
+        else:
+            content = content.replace("{SCRIPT}", ".specify/scripts/powershell/")
+        
+        content = content.replace("__AGENT__", ai_assistant)
+        
+        dest_file.write_text(content)
+        command_count += 1
+    
+    if tracker:
+        tracker.complete("copy-commands", f"{command_count} commands")
+        tracker.add("copy-scripts", "Copy helper scripts")
+        tracker.start("copy-scripts")
+    elif verbose:
+        console.print(f"[green]Copied {command_count} command templates[/green]")
+    
+    # Copy scripts
+    scripts_src_dir = scripts_dir / ("bash" if script_type == "sh" else "powershell")
+    script_count = 0
+    for script_file in scripts_src_dir.glob("*"):
+        if script_file.is_file():
+            dest_file = specify_scripts_dir / script_file.name
+            shutil.copy2(script_file, dest_file)
+            
+            # Make bash scripts executable
+            if script_type == "sh" and script_file.suffix == ".sh":
+                os.chmod(dest_file, dest_file.stat().st_mode | 0o111)
+            
+            script_count += 1
+    
+    if tracker:
+        tracker.complete("copy-scripts", f"{script_count} scripts")
+        tracker.add("copy-templates", "Copy spec templates")
+        tracker.start("copy-templates")
+    elif verbose:
+        console.print(f"[green]Copied {script_count} scripts[/green]")
+    
+    # Copy templates
+    template_files = [
+        "spec-template.md",
+        "plan-template.md",
+        "tasks-template.md",
+        "checklist-template.md",
+        "agent-file-template.md",
+        "domain-model-template.md",  # New domain template
+    ]
+    
+    template_count = 0
+    for template_name in template_files:
+        src_file = templates_dir / template_name
+        if src_file.exists():
+            dest_file = specify_templates_dir / template_name
+            shutil.copy2(src_file, dest_file)
+            template_count += 1
+    
+    if tracker:
+        tracker.complete("copy-templates", f"{template_count} templates")
+    elif verbose:
+        console.print(f"[green]Copied {template_count} templates[/green]")
+    
+    # Create .gitignore
+    gitignore_path = project_path / ".gitignore"
+    if not gitignore_path.exists():
+        gitignore_content = """# Specify artifacts
+.specify/context/
+*.log
+
+# Agent folders (may contain credentials)
+.claude/
+.cursor/
+.github/
+.gemini/
+.qwen/
+.opencode/
+.codex/
+.windsurf/
+.kilocode/
+.augment/
+.codebuddy/
+.amazonq/
+.agents/
+.roo/
+.shai/
+"""
+        gitignore_path.write_text(gitignore_content)
+        if verbose and not tracker:
+            console.print("[green]Created .gitignore[/green]")
+    
+    return project_path
+
+def download_and_extract_template(project_path: Path, ai_assistant: str, script_type: str, is_current_dir: bool = False, *, verbose: bool = True, tracker: StepTracker | None = None, client: httpx.Client = None, debug: bool = False, github_token: str = None, use_local: bool = False) -> Path:
     """Download the latest release and extract it to create a new project.
     Returns project_path. Uses tracker if provided (with keys: fetch, download, extract, cleanup)
     """
+    # Use local templates if requested
+    if use_local:
+        return copy_local_template(project_path, ai_assistant, script_type, is_current_dir, verbose=verbose, tracker=tracker)
+    
     current_dir = Path.cwd()
 
     if tracker:
@@ -942,6 +1127,7 @@ def init(
     skip_tls: bool = typer.Option(False, "--skip-tls", help="Skip SSL/TLS verification (not recommended)"),
     debug: bool = typer.Option(False, "--debug", help="Show verbose diagnostic output for network and extraction failures"),
     github_token: str = typer.Option(None, "--github-token", help="GitHub token to use for API requests (or set GH_TOKEN or GITHUB_TOKEN environment variable)"),
+    local: bool = typer.Option(False, "--local", help="Use local template files instead of downloading from GitHub (for development)"),
 ):
     """
     Initialize a new Specify project from the latest template.
@@ -949,7 +1135,7 @@ def init(
     This command will:
     1. Check that required tools are installed (git is optional)
     2. Let you choose your AI assistant
-    3. Download the appropriate template from GitHub
+    3. Download the appropriate template from GitHub (or use local with --local)
     4. Extract the template to a new project directory or current directory
     5. Initialize a fresh git repository (if not --no-git and no existing repo)
     6. Optionally set up AI assistant commands
@@ -966,6 +1152,7 @@ def init(
         specify init --here --ai codebuddy
         specify init --here
         specify init --here --force  # Skip confirmation when current directory not empty
+        specify init my-project --local  # Use local templates for development
     """
 
     show_banner()
@@ -1112,7 +1299,7 @@ def init(
             local_ssl_context = ssl_context if verify else False
             local_client = httpx.Client(verify=local_ssl_context)
 
-            download_and_extract_template(project_path, selected_ai, selected_script, here, verbose=False, tracker=tracker, client=local_client, debug=debug, github_token=github_token)
+            download_and_extract_template(project_path, selected_ai, selected_script, here, verbose=False, tracker=tracker, client=local_client, debug=debug, github_token=github_token, use_local=local)
 
             ensure_executable_scripts(project_path, tracker=tracker)
 

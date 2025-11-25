@@ -27,6 +27,18 @@ Follow this execution flow:
 2. Collect/derive values for placeholders:
    - If user input (conversation) supplies a value, use it.
    - Otherwise infer from existing repo context (README, docs, prior constitution versions if embedded).
+   - **Check for Domain Model** (Domain-First Integration):
+     * If `.specify/domain/domain.md` exists:
+       - Extract domain-driven principles from Bounded Context Rules section
+       - Include consistency requirements from Ubiquitous Language section
+       - Add aggregate protection rules as constitution principles
+       - Reference integration patterns from Context Integration section
+       - Example principles to derive:
+         * "Services MUST respect aggregate boundaries defined in domain model"
+         * "All code MUST use Ubiquitous Language terms from domain model"
+         * "Cross-context communication MUST follow integration patterns defined in domain model"
+         * "Domain events MUST be emitted for state changes as specified in domain model"
+     * If domain model does NOT exist: Proceed with user-provided or inferred principles
    - For governance dates: `RATIFICATION_DATE` is the original adoption date (if unknown ask or mark TODO), `LAST_AMENDED_DATE` is today if changes are made, otherwise keep previous.
    - `CONSTITUTION_VERSION` must increment according to semantic versioning rules:
      - MAJOR: Backward incompatible governance/principle removals or redefinitions.

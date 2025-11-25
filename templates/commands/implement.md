@@ -56,6 +56,42 @@ You **MUST** consider the user input before proceeding (if not empty).
    - **IF EXISTS**: Read research.md for technical decisions and constraints
    - **IF EXISTS**: Read quickstart.md for integration scenarios
 
+3a. **Domain Model Validation** (Domain-First Integration):
+   
+   If `.specify/domain/domain.md` exists, perform domain alignment checks:
+   
+   - **Load Domain Model**: Read `.specify/domain/domain.md` to understand:
+     * Bounded Contexts and their boundaries
+     * Entities, Value Objects, and Aggregates
+     * Domain Events
+     * Ubiquitous Language terms
+     * Aggregate protection rules
+     * Cross-context integration patterns
+   
+   - **Validate Spec Alignment**: Check that `spec.md` references the domain model:
+     * Verify "Domain Context" section is populated (not "N/A")
+     * Confirm bounded context assignment is correct
+     * Check that entities/aggregates are listed
+     * Validate domain events are specified
+   
+   - **Validate Plan Alignment**: Check that `plan.md` includes domain considerations:
+     * Verify "Domain Model Alignment" section exists and is complete
+     * Confirm aggregate boundaries are documented
+     * Check that domain events flow is defined
+     * Validate ubiquitous language enforcement rules are present
+   
+   - **Create Domain Validation Checklist**: Add to enforcement rules during implementation:
+     * ✓ Code organization follows bounded context structure
+     * ✓ All classes/functions use ubiquitous language naming
+     * ✓ Aggregate boundaries are respected (no direct modification of nested aggregates)
+     * ✓ Domain events are emitted for state changes as specified
+     * ✓ Cross-context communication uses defined integration patterns
+     * ✓ No business logic leaks across bounded context boundaries
+   
+   - **If domain model exists but spec/plan don't reference it**:
+     * **STOP** and warn: "Domain model exists but spec/plan don't reference it. Run `/speckit.specify` and `/speckit.plan` again to align with domain model, or proceed with caution."
+     * Wait for user confirmation before continuing
+
 4. **Project Setup Verification**:
    - **REQUIRED**: Create/verify ignore files based on actual project setup:
 

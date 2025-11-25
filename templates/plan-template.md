@@ -33,6 +33,41 @@
 
 [Gates determined based on constitution file]
 
+## Domain Model Alignment *(include if domain model exists)*
+
+<!--
+  If `.specify/domain/domain.md` exists, complete this section.
+  Otherwise, mark as "N/A - No domain model defined" and proceed to Project Structure.
+-->
+
+**Bounded Context**: [Which bounded context from `.specify/domain/domain.md` does this feature belong to?]
+
+**Aggregate Boundaries**: [Which aggregate boundaries must be respected in this implementation?]
+- [Aggregate 1]: [Rules for modification/access - e.g., "Can only be modified through Order aggregate root"]
+- [Aggregate 2]: [Transaction boundaries - e.g., "Must maintain consistency within single transaction"]
+
+**Domain Events Flow**: [Domain events this feature produces or consumes]
+
+**Produces**:
+- `[EventName]`: [When/why emitted] → [Which contexts consume this]
+- `[EventName]`: [When/why emitted] → [Which contexts consume this]
+
+**Consumes**:
+- `[EventName]`: [From which context] → [How this feature reacts]
+- `[EventName]`: [From which context] → [How this feature reacts]
+
+**Ubiquitous Language Enforcement**: [Key domain terms and how code should reflect them]
+- [Term 1] → [Code representation, e.g., "Use `PlaceOrder` method, not `CreateOrder` or `MakeOrder`"]
+- [Term 2] → [Code representation, e.g., "Represent as `OrderStatus` enum with exact values from domain model"]
+
+**Cross-Context Integration**: [How this feature integrates with other bounded contexts]
+- [Context 1]: [Integration mechanism - e.g., "Via OrderPlaced event (async)", "Via REST API (sync)"]
+- [Context 2]: [Integration mechanism and data flow]
+
+**Domain Rules to Enforce**: [Critical business rules from domain model that code must implement]
+1. [Rule 1, e.g., "Orders cannot be modified after shipment"]
+2. [Rule 2, e.g., "Payment must be validated before order confirmation"]
+
 ## Project Structure
 
 ### Documentation (this feature)
